@@ -7,6 +7,7 @@ mongo:
 
 rocketchat:
   image: rocketchat/rocket.chat:latest
+  restart: unless-stopped
   volumes:
     - ${ROCKET_UPLOAD_PATH}:/app/uploads
   environment:
@@ -31,6 +32,7 @@ mongo-init-replica:
 # before starting this image)
 hubot:
   image: rocketchat/hubot-rocketchat
+  restart: unless-stopped
   environment:
     - ROCKETCHAT_URL=rocketchat:3000
     - ROCKETCHAT_ROOM=GENERAL
@@ -41,6 +43,8 @@ hubot:
     - EXTERNAL_SCRIPTS=hubot-help,hubot-seen,hubot-links,hubot-diagnostics
   depends_on:
     - rocketchat
+  volumes:
+    - ${HUBOT_SCRIPT_PATH}:/home/hubot/scripts
   # this is used to expose the hubot port for notifications on the host on port
   # 3001, e.g. for hubot-jenkins-notifier
   ports:
