@@ -1,13 +1,32 @@
-.catalog:
+version: '2'
+catalog:
   name: "RocketChat"
   version: "v0.2"
   description: "Have your own Slack like online chat, built with Meteor."
-  uuid: rocketchat-0
   minimum_rancher_version: v0.51.0
+  upgrade_from:
   questions:
     - variable: "MONGO_DB_PATH"
+      label: "A persistent path on the filesystem to store the mongo db"
+      description: |
+        This path will be mounted to `/data/db`, see hub.docker.com/_/mongo/
+        for explanations.
+      type: string
     - variable: "ROCKET_UPLOAD_PATH"
+      label: "A persistent path to store uploaded files."
+      description: |
+          This path will be mounted to `/app/uploads`, see e.g.
+          github.com/RocketChat/Rocket.Chat/blob/develop/docker-compose.yml for
+          details.
+          Depending on how much Rocket.chat will be used for file sharing in
+          your team, this might get huge.
+      type: string
+    - variable: "HUBOT_SCRIPT_PATH"
+      label: "A path containing hubot scripts"
+      type: string
 rocketchat:
   scale: 1
 db:
+  scale: 1
+hubot:
   scale: 1

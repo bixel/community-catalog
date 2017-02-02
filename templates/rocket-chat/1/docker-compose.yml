@@ -1,8 +1,9 @@
-db:
+mongo:
   image: mongo:3.2
+  restart: unless-stopped
   volumes:
     - ${MONGO_DB_PATH}:/data/db
-  command: mongod --smallfiles
+  command: mongod --smallfiles --oplogSize 128 --replSet rs0
 
 rocketchat:
   image: rocketchat/rocket.chat:latest
@@ -10,14 +11,24 @@ rocketchat:
     - ${ROCKET_UPLOAD_PATH}:/app/uploads
   environment:
     - PORT=3000
-    - ROOT_URL=http://yourhost:3000
+    - ROOT_URL=http://localhost:3000
     - MONGO_URL=mongodb://mongo:27017/rocketchat
+    - MONGO_OPLOG_URL=mongodb://mongo:27017/local
   links:
-    - db
+    - mongo
   ports:
     - 3000:3000
 
-# hubot, the popular chatbot (add the bot user first and change the password before starting this image)
+# this container's job is just run the command to initialize the replica set.
+# it will run the command and remove himself (it will not stay running)
+mongo-init-replica:
+  image: mongo:3.2
+  command: 'mongo mongo/rocketchat --eval "rs.initiate({ _id: ''rs0'', members: [ { _id: 0, host: ''localhost:27017'' } ]})"'
+  depends_on:
+    - mongo
+
+# hubot, the popular chatbot (add the bot user first and change the password
+# before starting this image)
 hubot:
   image: rocketchat/hubot-rocketchat
   environment:
@@ -26,10 +37,11 @@ hubot:
     - ROCKETCHAT_USER=bot
     - ROCKETCHAT_PASSWORD=botpassword
     - BOT_NAME=bot
-# you can add more scripts as you'd like here, they need to be installable by npm
+    # you can add more scripts as you'd like here, they need to be installable by npm
     - EXTERNAL_SCRIPTS=hubot-help,hubot-seen,hubot-links,hubot-diagnostics
-  links:
-    - rocketchat:rocketchat
-# this is used to expose the hubot port for notifications on the host on port 3001, e.g. for hubot-jenkins-notifier
+  depends_on:
+    - rocketchat
+  # this is used to expose the hubot port for notifications on the host on port
+  # 3001, e.g. for hubot-jenkins-notifier
   ports:
     - 3001:8080
